@@ -1,0 +1,55 @@
+variable,lower,median,upper,distribution,label
+cost_ECO_machine,2400000,NA,3000000,posnorm,Cost of the eco-pulper (KSh)
+water_use_fermentation_washing,5,NA,40,posnorm,Water use for fermentation (L/kg)
+water_use_BAU,0.2,NA,10,posnorm,Water use for processing BAU (L/kg)
+water_use_ECO,0.2,NA,1.7,posnorm,Water use for processing ECO (L/kg)
+water_price,0.09,NA,0.2,posnorm,Water price per liter Ksh/L
+energy_use_BAU,1.865,NA,3.73,posnorm,Energy use for processing BAU (kWh)
+energy_use_ECO,5.78,NA,11.56,posnorm,Energy use for processing ECO (kWh)
+energy_price,12,NA,25,posnorm,Energy price (KSh/kW)
+labour_needs_BAU,0.0407,NA,0.08,posnorm,Labour demand per kg beans processed BAU
+labour_needs_ECO,0.001,NA,0.002,posnorm,Labour demand per kg beans processed ECO
+wage_per_day,335,NA,490,posnorm,wage pai per day (Ksh)
+chance_damage_BAU,0.05,NA,0.35,tnorm_0_1,Chance of machine damage BAU
+chance_damage_ECO,0.05,NA,0.18,tnorm_0_1,Chance of machine damage ECO
+cost_repairment,5000,NA,200000,posnorm,Cost of repairment
+bean_output_pct_BAU,0.10,NA,0.2,tnorm_0_1,Percent processed beans of unprocessed input BAU
+bean_output_pct_ECO,0.15,NA,0.2,tnorm_0_1,Percent processed beans of unprocessed input ECO
+pct_cs_high_output_BAU,0.50,NA,0.90,tnorm_0_1,Percent good quality beans BAU
+pct_cs_high_output_ECO,0.60,NA,0.95,tnorm_0_1,Percent good quality beans ECO
+price_bean,600,NA,750,posnorm,Price [KSH per kg processed good quality beans
+discount_rate,0.1,NA,0.1,const,Discount rate
+n_years,15,NA,15,const,Number of years
+capacity_BAU,4000,NA,4000,const,Capacity BAU (kg beans / hour)
+capacity_ECO,4000,NA,4000,const,Capacity ECO (kg beans / hour)
+maintenance_cost_BAU,16500,NA,24000,posnorm,Maintencance costs yearly BAU
+maintenance_cost_ECO,15000,NA,30000,posnorm,Maintencance costs yearly ECO
+eco_label_premium,11000,NA,50000,posnorm,Eco premium
+eco_label_premium_chance,0.12,NA,0.65,tnorm_0_1,Percent chance of getting eco premium
+pct_sales_to_farmers,0.75,NA,0.85,tnorm_0_1,Percentage of sales proceeds that goes to the farmers
+cost_BAU_machine,600000,NA,800000,posnorm,Cost of new BAU machine (KSh)
+selling_old_machine,180000,NA,240000,posnorm,Potential salvage of old BAU machine
+wage_per_hour,37.22222222,NA,54.44444444,posnorm,wage per hour(Ksh)
+price_difference_specialty,1.2,NA,2.0,posnorm,Difference prices grade 1 and 2 (%)
+price_difference_local,1.0,NA,1.2,posnorm,Difference prices grade 1 and premium grade (%)
+share_coffee_exchange, 0.8, NA, 0.95,tnorm_0_1, Share of coffee sales to Nairobi Coffee Exchange (%)
+share_specialty, 0.05, NA,0.1,tnorm_0_1, Share of specialty grade coffee (%)
+CV_price,50,NA,70 ,posnorm,Price variation
+CV_costs,2, NA, 5, posnorm, Cost variation
+CV_yield,31,NA,100, posnorm, Yield variability (yearly in %) 
+CV_maintenance, 3, NA, 10, posnorm, Maintenance variation
+trend_costs,1, NA, 2, posnorm, Trend cost increase (%)
+trend_yield, -2,NA,-0.5, norm, Trend yield decline (%)
+trend_capacity_output_BAU, -3.5, NA, -1, norm, Trend capacity decline BAU (%)
+trend_capacity_output_ECO, -2, NA, -0.5, norm, Trend capacity decline ECO (%)
+trend_maintenance_cost_BAU, 1, NA, 4, posnorm, Trend increase maintenance cost (%)
+trend_maintenance_cost_ECO, 1, NA, 2, posnorm, Trend increase maintenance cost (%)
+trend_damage_ECO, 1, NA, 3, posnorm, Trend increase chance and cost of damage (%)
+trend_damage_BAU, 2, NA, 6, posnorm, Trend increase chance and cost of damage (%)
+number_of_farmers,300,NA,2000, posnorm, Number of farmers in cooperative
+coffee_area_farm, 0.24, NA, 3, posnorm, Area under coffee per farm (ha)
+coffee_yield_area,403,NA, 609, posnorm, Green bean yield (kg/ha)
+miscel_variation, 1, NA, 3, posnorm, Variation of other variables
+miscel_variation_big, 10, NA,20, posnorm, Variation of other varibles
+water_recharge, 0.9, NA, 0.98, tnorm_0_1, Share of water going back into river (polluted) 
+decrease_export,-0.2, NA,-0.01,norm, Relative increase in local demand i.e. less export 
