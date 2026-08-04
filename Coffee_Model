@@ -1,0 +1,230 @@
+# LOAD PACKAGES
+library(decisionSupport)
+library(readr)
+library(tidyr)
+
+# RANDOM DRAW
+make_variables <- function(est, n = 1){
+  x <- random(rho = est, n = n)
+  for(i in colnames(x)){
+    assign(i, as.numeric(x[1,i]), envir = .GlobalEnv)
+  }
+}
+make_variables(estimate_read_csv("Input_Coffee_New.csv"))
+
+
+# MODEL FUNCTION
+#set.seed(123)
+decision_model <- function(){
+      # BEAN INPUT 
+    
+      # Bean input
+      number_farmers <- vv(number_of_farmers, miscel_variation, n_years)
+      coffee_area <- vv(coffee_area_farm, miscel_variation, n_years)
+      coffee_yield <- vv(coffee_yield_area, CV_yield, n_years, relative_trend = trend_yield)
+      bean_input_v <- number_farmers * coffee_area * coffee_yield
+  
+      # BEAN OUTPUT
+      # Share of processed yield (% of green cherries processed to beans)
+      bean_output_pct_BAU_v <- vv(bean_output_pct_BAU, miscel_variation, 
+                                  n_years, relative_trend = trend_capacity_output_BAU)
+      
+      bean_output_pct_ECO_v <- vv(bean_output_pct_ECO, miscel_variation, 
+                                  n_years, relative_trend = trend_capacity_output_ECO)
+      
+      # Processed beans (kg)
+      yield_BAU  <- bean_input_v * bean_output_pct_BAU_v
+      yield_ECO  <- bean_input_v * bean_output_pct_ECO_v
+      
+      # Machine performance
+      capacity_BAU_decline <- vv(capacity_BAU, miscel_variation, 
+                                 n_years,relative_trend = trend_capacity_output_BAU)
+      capacity_ECO_decline <- vv(capacity_ECO, miscel_variation, 
+                                 n_years,relative_trend = trend_capacity_output_ECO)
+      
+      hours_BAU <- bean_input_v / capacity_BAU_decline
+      hours_ECO <- bean_input_v / capacity_ECO_decline
+      
+      
+      # Costs
+      # Damage and repair events
+      damage_chance_BAU <- vv(var_mean = chance_damage_BAU,
+                              var_CV = miscel_variation_big,n = n_years,relative_trend = trend_damage_BAU,upper_limit = 1)
+      
+      damage_chance_ECO <- vv(var_mean = chance_damage_ECO,
+                              var_CV = miscel_variation_big,n = n_years,relative_trend = trend_damage_ECO,upper_limit = 1)
+      
+      repair_cost_BAU <- vv(var_mean = cost_repairment,
+                            var_CV =CV_costs,n = n_years,relative_trend = trend_damage_BAU)
+      
+      repair_cost_ECO <- vv(var_mean = cost_repairment,
+                            var_CV =CV_costs,n = n_years,relative_trend = trend_damage_ECO)
+      
+      repair_damage_BAU <- chance_event(chance = damage_chance_BAU,
+                            value_if = repair_cost_BAU,value_if_not = rep(0, n_years))
+      
+      repair_damage_ECO <- chance_event(chance = damage_chance_ECO,
+                            value_if = repair_cost_ECO,value_if_not = rep(0, n_years))
+      
+      # Operating costs
+      water_price_v <- vv(water_price,CV_price, n_years, relative_trend=trend_costs)
+      water_cost_BAU <-  ((vv(water_use_BAU,miscel_variation, n_years) * bean_input_v) +
+           (vv(water_use_fermentation_washing,miscel_variation, n_years) * yield_BAU)) * water_price_v
+      water_cost_ECO <-  water_price_v * (vv(water_use_ECO,miscel_variation, n_years)) * bean_input_v
+      
+      energy_price_v <- vv(energy_price,CV_price, n_years, relative_trend=trend_costs)
+      energy_cost_BAU <- energy_price_v * vv(energy_use_BAU,miscel_variation,n_years) * hours_BAU
+      energy_cost_ECO <- energy_price_v * vv(energy_use_ECO,miscel_variation,n_years) * hours_ECO
+      
+      wage_per_hour_v <- vv(wage_per_hour,CV_price, n_years, relative_trend=trend_costs)
+      labor_cost_BAU <- wage_per_hour_v * hours_BAU
+      labor_cost_ECO <- wage_per_hour_v * hours_ECO
+      
+      maintenance_BAU <- vv(maintenance_cost_BAU,CV_costs, n_years, relative_trend = trend_maintenance_cost_BAU)
+      
+      maintenance_ECO <- vv(maintenance_cost_ECO,CV_costs, n_years, relative_trend = trend_maintenance_cost_ECO) 
+      
+      #Total costs
+      total_costs_BAU <-
+        #water_cost_BAU +
+        energy_cost_BAU +
+        labor_cost_BAU +
+        maintenance_BAU +
+        repair_damage_BAU
+      
+      total_costs_ECO <-
+        #water_cost_ECO +
+        energy_cost_ECO +
+        labor_cost_ECO +
+        maintenance_ECO +
+        repair_damage_ECO
+      
+      # Initial investment
+      total_costs_ECO[1] <- total_costs_ECO[1] + cost_ECO_machine
+      
+      
+      ##############################################
+      # Sales
+      
+      # Share grade 1 and 2 
+      #share_1_BAU <- vv(pct_cs_high_output_BAU,miscel_variation,n_years)
+      #share_2_BAU <- 1 - share_1_BAU 
+      #share_1_ECO <- vv(pct_cs_high_output_BAU,miscel_variation,n_years)
+      #share_2_ECO <- 1 - share_1_ECO 
+      
+      # Nairobi coffee exchange vs. local coffee shops
+      share_nex <- vv(share_coffee_exchange, miscel_variation, n_years, absolute_trend =decrease_export)
+      #share_all_local <- 1 - share_nex 
+      share_local_specialty <-vv(share_specialty, miscel_variation, n_years)
+      #share_local_normal <- 1 - share_local_specialty
+          
+      nex_BAU <- yield_BAU * share_nex
+      all_local_BAU <- yield_BAU - nex_BAU
+      specialty_BAU <- all_local_BAU * share_local_specialty
+      local_BAU <- all_local_BAU - specialty_BAU
+      
+      nex_ECO <- yield_ECO * share_nex
+      all_local_ECO <- yield_ECO - nex_ECO
+      local_ECO <- all_local_ECO * share_local_specialty
+      specialty_ECO <- all_local_ECO - local_ECO
+      
+      # Bean prices
+      bean_price_nex <- vv(price_bean,CV_price,n_years)
+      bean_price_local <- bean_price_nex * (vv(price_difference_local,miscel_variation,n_years))
+      bean_price_specialty <- bean_price_local * (vv(price_difference_specialty,miscel_variation,n_years, upper_limit = 2))
+      
+      # SALES
+      sales_nex_BAU <- nex_BAU * bean_price_nex
+      sales_local_BAU <- local_BAU * bean_price_local
+      sales_specialty_BAU <- specialty_BAU * bean_price_specialty
+      
+      sales_nex_ECO <- nex_ECO * bean_price_nex
+      sales_local_ECO <- local_ECO * bean_price_local
+      sales_specialty_ECO <- specialty_ECO * bean_price_specialty
+      
+      total_bean_sales_BAU <- sales_nex_BAU + sales_local_BAU + sales_specialty_BAU
+      total_bean_sales_ECO <- sales_nex_ECO + sales_local_ECO + sales_specialty_ECO
+        
+      # ECO PREMIUM
+      eco_premium_chance <- vv(var_mean = eco_label_premium_chance,
+        var_CV = miscel_variation_big,n = n_years, upper_limit = 1)
+      
+      eco_premium <- chance_event(chance = eco_premium_chance,
+        value_if = rep(eco_label_premium,n_years),
+        value_if_not = rep(0, n_years))
+      
+      # INCOME
+      BAU_income <- total_bean_sales_BAU
+      ECO_income <- total_bean_sales_ECO +  eco_premium
+      
+      # Sale of old machine
+      ECO_income[1] <- ECO_income[1] + selling_old_machine
+      
+      # Final outcome
+      BAU_outcome <- BAU_income - total_costs_BAU
+      ECO_outcome <- ECO_income - total_costs_ECO
+      Decision_outcome <- ECO_outcome - BAU_outcome
+      
+      # Per farmer
+      BAU_outcome_farm <- (BAU_outcome *  pct_sales_to_farmers) / number_farmers
+      ECO_outcome_farm <- (ECO_outcome *  pct_sales_to_farmers) / number_farmers
+      Decision_outcome_farm <- ECO_outcome_farm - BAU_outcome_farm
+      
+      # CASH FLOW
+      BAU_cashflow      <- vv(BAU_income - total_costs_BAU, n = n_years, var_CV = 100)
+      BAU_cashflow_VARI <- vv(BAU_income - total_costs_BAU, n = n_years, var_CV = 100)
+      ECO_cashflow      <- vv(ECO_income - total_costs_ECO, n = n_years, var_CV = 100)
+      ECO_cashflow_VARI <- vv(ECO_income - total_costs_ECO, n = n_years, var_CV = 100)
+      Decision_benefit  <- ECO_cashflow - BAU_cashflow
+      
+      ##############################################
+      # NPV
+      NPV_BAU <-discount(BAU_outcome_farm,#BAU_cashflow,
+          discount_rate, calculate_NPV = TRUE)
+      
+      NPV_ECO <- discount(ECO_outcome_farm,#ECO_cashflow,
+          discount_rate, calculate_NPV = TRUE)
+      
+      NPV_decision <- discount(Decision_outcome_farm,#Decision_benefit,
+          discount_rate, calculate_NPV = TRUE)
+      
+      cum_cash_flow <- cumsum(NPV_ECO)
+      
+      
+      ##############################################
+      #ENVIRONMENT
+      water_footprint_BAU <-  ((water_use_BAU * bean_input_v) +
+                            (water_use_fermentation_washing * yield_BAU)) * (vv(water_recharge,miscel_variation, n_years)) 
+      NPV_water_BAU <- discount(water_footprint_BAU, 0, calculate_NPV = TRUE)
+      water_footprint_ECO <-  water_use_ECO * bean_input_v * (vv(water_recharge,miscel_variation, n_years) )
+      NPV_water_ECO <- discount(water_footprint_ECO, 0, calculate_NPV = TRUE)
+      water_saved <- water_footprint_BAU - water_footprint_ECO
+      
+      NPV_water_saved <- discount(water_saved, 0, calculate_NPV = TRUE)
+      
+      ##############################################
+      return(list(NPV_BAU = NPV_BAU,
+          NPV_ECO = NPV_ECO,
+          NPV_decision = NPV_decision,
+          #cashflow = cum_cash_flow,
+          #BAU_cashflow = BAU_cashflow,
+          #ECO_cashflow = ECO_cashflow,
+          #Decision_benefit = Decision_benefit,
+          NPV_water_BAU = NPV_water_BAU,
+          NPV_water_ECO = NPV_water_ECO,
+          #water_saved = water_saved,
+          NPV_water_saved = NPV_water_saved,
+          ECO_outcome_farm = ECO_outcome_farm,
+          #BAU_outcome_farm = BAU_outcome_farm,
+          Decision_outcome_farm = Decision_outcome_farm
+        )
+      )
+}      
+  
+
+# RUN THE MODEL    
+coffee_mc_simulation <- mcSimulation(
+  estimate = estimate_read_csv("Input_Coffee_New.csv"),
+  model_function = decision_model,
+  numberOfModelRuns = 10000,
+  functionSyntax = "plainNames")
